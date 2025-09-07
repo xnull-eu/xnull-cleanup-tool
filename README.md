@@ -150,4 +150,4 @@ XNull Cleanup Tool/
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the (MIT License)[https://raw.githubusercontent.com/xnull-eu/xnull-cleanup-tool/refs/heads/main/LICENSE] - see the LICENSE file for details. 
