@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Drawing.Drawing2D;
+using System.Security.Principal;
 
 namespace XNullCleanup
 {
@@ -36,7 +37,16 @@ namespace XNullCleanup
         private readonly Color secondaryColor = Color.FromArgb(98, 91, 113);     // Secondary color
 
         // Custom scrollbar
-        private CustomScrollBar customScrollBar;
+        private CustomScrollBar customScrollBar = null!;
+        
+        // Material Select All checkbox reference
+        private MaterialCheckBox? materialSelectAllCheckBox = null;
+        
+        // Flag to prevent infinite loop when updating checkboxes
+        private bool isUpdatingSelectAll = false;
+        
+        // Timer for automatic size refresh
+        private System.Windows.Forms.Timer? sizeRefreshTimer;
 
         public MainForm()
         {
@@ -77,6 +87,66 @@ namespace XNullCleanup
             
             // Setup the custom scrollbar after populating
             SetupCustomScrollBar();
+            
+            // Initialize automatic size refresh timer
+            InitializeSizeRefreshTimer();
+        }
+
+        private void InitializeSizeRefreshTimer()
+        {
+            sizeRefreshTimer = new System.Windows.Forms.Timer();
+            sizeRefreshTimer.Interval = 5000; // 5 seconds
+            sizeRefreshTimer.Tick += SizeRefreshTimer_Tick;
+            sizeRefreshTimer.Start();
+        }
+
+        private void SizeRefreshTimer_Tick(object? sender, EventArgs e)
+        {
+            RefreshSizeDisplays();
+        }
+
+        private void RefreshSizeDisplays()
+        {
+            // Update size displays for all cleanup options
+            foreach (Control control in cleanupOptionsPanel.Controls)
+            {
+                if (control is Panel panel)
+                {
+                    Label? label = panel.Controls.OfType<Label>().FirstOrDefault();
+                    if (label != null && panel.Tag is string optionKey)
+                    {
+                        if (cleanupOptions.TryGetValue(optionKey, out CleanupOption? option) && option != null)
+                        {
+                            // Recreate label text with updated size
+                            string labelText = optionKey;
+                            
+                            // Only show size for file/folder-based cleanups, not command-based ones
+                            if (option.CustomCleanupFunction != null && string.IsNullOrEmpty(option.Path))
+                            {
+                                // Command-based cleanup (like DNS Cache) - don't show size
+                                if (!option.Description.Contains("Recycle Bin"))
+                                {
+                                    labelText = optionKey; // No size display
+                                }
+                                else
+                                {
+                                    // Recycle Bin - show size
+                                    string sizeText = option.GetFormattedSize();
+                                    labelText = $"{optionKey} ({sizeText})";
+                                }
+                            }
+                            else
+                            {
+                                // File/folder-based cleanup - show size
+                                string sizeText = option.GetFormattedSize();
+                                labelText = $"{optionKey} ({sizeText})";
+                            }
+                            
+                            label.Text = labelText;
+                        }
+                    }
+                }
+            }
         }
 
         private void SetupCustomScrollBar()
@@ -197,10 +267,34 @@ namespace XNullCleanup
                     Tag = option.Key
                 };
 
-                // Create label
+                // Create label with size information
+                string labelText = option.Key;
+                
+                // Only show size for file/folder-based cleanups, not command-based ones
+                if (option.Value.CustomCleanupFunction != null && string.IsNullOrEmpty(option.Value.Path))
+                {
+                    // Command-based cleanup (like DNS Cache) - don't show size
+                    if (!option.Value.Description.Contains("Recycle Bin"))
+                    {
+                        labelText = option.Key; // No size display
+                    }
+                    else
+                    {
+                        // Recycle Bin - show size
+                        string sizeText = option.Value.GetFormattedSize();
+                        labelText = $"{option.Key} ({sizeText})";
+                    }
+                }
+                else
+                {
+                    // File/folder-based cleanup - show size
+                    string sizeText = option.Value.GetFormattedSize();
+                    labelText = $"{option.Key} ({sizeText})";
+                }
+                
                 Label label = new Label
                 {
-                    Text = option.Key,
+                    Text = labelText,
                     AutoSize = false,
                     Size = new Size(optionPanel.Width - 60, 24),
                     Location = new Point(48, 12), // Center vertically
@@ -232,13 +326,60 @@ namespace XNullCleanup
                 // Add change event to checkbox
                 checkBox.CheckedChanged += (sender, e) => 
                 {
-                    // Don't change selection on checkbox click
-                    e.ToString(); // Just to avoid warning
+                    // Update Select All checkbox state when individual checkboxes change
+                    UpdateSelectAllCheckboxState();
                 };
 
                 // Add the panel to the flow layout
                 cleanupOptionsPanel.Controls.Add(optionPanel);
             }
+        }
+
+        private void UpdateSelectAllCheckboxState()
+        {
+            if (materialSelectAllCheckBox == null || isUpdatingSelectAll) return;
+
+            // Count total checkboxes and checked checkboxes
+            int totalCheckboxes = 0;
+            int checkedCheckboxes = 0;
+
+            foreach (Control control in cleanupOptionsPanel.Controls)
+            {
+                if (control is Panel panel)
+                {
+                    MaterialCheckBox? checkBox = panel.Controls.OfType<MaterialCheckBox>().FirstOrDefault();
+                    if (checkBox != null)
+                    {
+                        totalCheckboxes++;
+                        if (checkBox.Checked)
+                        {
+                            checkedCheckboxes++;
+                        }
+                    }
+                }
+            }
+
+            // Set flag to prevent infinite loop
+            isUpdatingSelectAll = true;
+
+            // Update Select All checkbox state
+            if (checkedCheckboxes == 0)
+            {
+                materialSelectAllCheckBox.Checked = false;
+            }
+            else if (checkedCheckboxes == totalCheckboxes)
+            {
+                materialSelectAllCheckBox.Checked = true;
+            }
+            else
+            {
+                // For partial selection, we'll keep it unchecked
+                // You could implement indeterminate state here if desired
+                materialSelectAllCheckBox.Checked = false;
+            }
+
+            // Reset flag
+            isUpdatingSelectAll = false;
         }
 
         private void UpdateSelectedOptionUI()
@@ -262,7 +403,7 @@ namespace XNullCleanup
 
         private void UpdateDescriptionPanel(string optionName)
         {
-            if (cleanupOptions.TryGetValue(optionName, out CleanupOption option))
+            if (cleanupOptions.TryGetValue(optionName, out CleanupOption? option) && option != null)
             {
                 // Create a rich text description
                 descriptionTextBox.Clear();
@@ -471,6 +612,9 @@ namespace XNullCleanup
                 BackColor = Color.Transparent,
                 Name = "materialSelectAllCheckBox"
             };
+            
+            // Store reference to the Select All checkbox
+            materialSelectAllCheckBox = materialCheckBox;
 
             // Create a new label for the text
             Label selectAllLabel = new Label
@@ -492,17 +636,21 @@ namespace XNullCleanup
             // Connect the new checkbox to the select all functionality
             materialCheckBox.CheckedChanged += (sender, e) => 
             {
-                bool isChecked = materialCheckBox.Checked;
-                
-                // Update all checkboxes in the options panel
-                foreach (Control control in cleanupOptionsPanel.Controls)
+                // Only update if not already updating (prevent infinite loop)
+                if (!isUpdatingSelectAll)
                 {
-                    if (control is Panel panel)
+                    bool isChecked = materialCheckBox.Checked;
+                    
+                    // Update all checkboxes in the options panel
+                    foreach (Control control in cleanupOptionsPanel.Controls)
                     {
-                        MaterialCheckBox? checkBox = panel.Controls.OfType<MaterialCheckBox>().FirstOrDefault();
-                        if (checkBox != null)
+                        if (control is Panel panel)
                         {
-                            checkBox.Checked = isChecked;
+                            MaterialCheckBox? checkBox = panel.Controls.OfType<MaterialCheckBox>().FirstOrDefault();
+                            if (checkBox != null)
+                            {
+                                checkBox.Checked = isChecked;
+                            }
                         }
                     }
                 }
@@ -631,6 +779,10 @@ namespace XNullCleanup
 
             // Cleanup complete
             statusLabel.Text = "Cleanup complete!";
+            
+            // Immediately refresh size displays to show updated values
+            RefreshSizeDisplays();
+            
             cleanButton.Enabled = true;
             selectAllCheckBox.Enabled = true;
         }
@@ -729,6 +881,197 @@ namespace XNullCleanup
             FilePattern = filePattern;
             CustomCleanupFunction = customCleanupFunction;
             RiskMessage = riskMessage;
+        }
+
+        public long CalculateSize()
+        {
+            try
+            {
+                // For custom cleanup functions (like DNS cache or Recycle Bin), return 0
+                if (CustomCleanupFunction != null)
+                {
+                    if (Path == "")
+                    {
+                        // Special handling for Recycle Bin
+                        if (Description.Contains("Recycle Bin"))
+                        {
+                            return CalculateRecycleBinSize();
+                        }
+                        return 0; // DNS Cache and other command-based cleanups
+                    }
+                }
+
+                if (string.IsNullOrEmpty(Path) || !Directory.Exists(Path))
+                    return 0;
+
+                long totalSize = 0;
+
+                if (!string.IsNullOrEmpty(FilePattern))
+                {
+                    // Calculate size for specific file pattern
+                    totalSize = CalculatePatternSize(Path, FilePattern);
+                }
+                else
+                {
+                    // Calculate size for entire directory
+                    totalSize = CalculateDirectorySize(Path);
+                }
+
+                return totalSize;
+            }
+            catch
+            {
+                return 0; // Return 0 if there's an error (e.g., access denied)
+            }
+        }
+
+        private long CalculateDirectorySize(string dirPath)
+        {
+            long size = 0;
+            
+            try
+            {
+                // Get all files in directory
+                string[] files = Directory.GetFiles(dirPath, "*", SearchOption.AllDirectories);
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        FileInfo fileInfo = new FileInfo(file);
+                        size += fileInfo.Length;
+                    }
+                    catch
+                    {
+                        // Skip files that can't be accessed
+                        continue;
+                    }
+                }
+            }
+            catch
+            {
+                // Return current size if there's an error
+            }
+
+            return size;
+        }
+
+        private long CalculatePatternSize(string dirPath, string pattern)
+        {
+            long size = 0;
+            
+            try
+            {
+                string[] files = Directory.GetFiles(dirPath, pattern, SearchOption.AllDirectories);
+                foreach (string file in files)
+                {
+                    try
+                    {
+                        FileInfo fileInfo = new FileInfo(file);
+                        size += fileInfo.Length;
+                    }
+                    catch
+                    {
+                        // Skip files that can't be accessed
+                        continue;
+                    }
+                }
+            }
+            catch
+            {
+                // Return current size if there's an error
+            }
+
+            return size;
+        }
+
+        private long CalculateRecycleBinSize()
+        {
+            try
+            {
+                long totalSize = 0;
+                DriveInfo[] drives = DriveInfo.GetDrives();
+                
+                foreach (DriveInfo drive in drives)
+                {
+                    if (drive.DriveType == DriveType.Fixed)
+                    {
+                        string recycleBinPath = System.IO.Path.Combine(drive.RootDirectory.FullName, "$Recycle.Bin");
+                        if (Directory.Exists(recycleBinPath))
+                        {
+                            // Only count user-accessible recycle bin files
+                            totalSize += CalculateUserRecycleBinSize(recycleBinPath);
+                        }
+                    }
+                }
+                
+                return totalSize;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        private long CalculateUserRecycleBinSize(string recycleBinPath)
+        {
+            try
+            {
+                long size = 0;
+                
+                // Get the current user's SID directory in the recycle bin
+                string currentUserSid = System.Security.Principal.WindowsIdentity.GetCurrent().User?.Value ?? "";
+                if (!string.IsNullOrEmpty(currentUserSid))
+                {
+                    string userRecycleBinPath = System.IO.Path.Combine(recycleBinPath, currentUserSid);
+                    if (Directory.Exists(userRecycleBinPath))
+                    {
+                        // Only count actual deleted files, not system metadata
+                        string[] files = Directory.GetFiles(userRecycleBinPath, "$R*", SearchOption.TopDirectoryOnly);
+                        foreach (string file in files)
+                        {
+                            try
+                            {
+                                FileInfo fileInfo = new FileInfo(file);
+                                size += fileInfo.Length;
+                            }
+                            catch
+                            {
+                                // Skip files that can't be accessed
+                                continue;
+                            }
+                        }
+                    }
+                }
+                
+                return size;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+
+        public string GetFormattedSize()
+        {
+            long bytes = CalculateSize();
+            return FormatBytes(bytes);
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes == 0) return "0 B";
+            
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int suffixIndex = 0;
+            double size = bytes;
+            
+            while (size >= 1024 && suffixIndex < suffixes.Length - 1)
+            {
+                size /= 1024;
+                suffixIndex++;
+            }
+            
+            return $"{size:F1} {suffixes[suffixIndex]}";
         }
     }
 

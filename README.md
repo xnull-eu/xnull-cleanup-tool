@@ -10,7 +10,7 @@ A modern, Material 3-themed Windows cleanup utility that helps you free up disk 
   - Proper elevation and surface treatments with rounded corners
   - Consistent typography using Segoe UI font family
   - Borderless window with custom title bar and window controls
-- **13 Comprehensive Cleanup Options**: Clean various parts of Windows including:
+- **13 Comprehensive Cleanup Options with Size Display**: Clean various parts of Windows including:
   - **Windows Temp Files** (`C:\Windows\Temp`) - System temporary files
   - **User Temp Files** (`%USERPROFILE%\AppData\Local\Temp`) - User-specific temporary files
   - **Prefetch Data** (`C:\Windows\Prefetch`) - Application launch optimization files
@@ -39,9 +39,12 @@ A modern, Material 3-themed Windows cleanup utility that helps you free up disk 
   - Asynchronous cleanup process that doesn't freeze the UI
   - Individual status messages for each cleanup operation
 - **Smart Selection Features**:
-  - Material 3 styled "Select All" checkbox for quick selection
+  - Material 3 styled "Select All" checkbox for quick selection with automatic state synchronization
   - Individual Material 3 checkboxes for each cleanup option
   - Visual selection highlighting with Material 3 surface colors
+  - Real-time size calculation and display for each cleanup option (e.g., "Windows Temp (125.4 MB)")
+  - Automatic size formatting in appropriate units (B, KB, MB, GB, TB)
+  - Live size updates every 5 seconds with immediate refresh after cleanup operations
 
 ## UI Features
 
@@ -88,10 +91,13 @@ The application requires a custom icon file to display properly in the taskbar:
 7. **Review results**: Check the final status messages for any issues or completion confirmation
 
 ### Interface Guide
-- **Left Panel**: List of all available cleanup options with checkboxes
+- **Left Panel**: List of all available cleanup options with checkboxes and real-time size display
 - **Right Panel**: Detailed descriptions, file locations, and risk warnings for selected items
 - **Bottom Section**: Progress bar, status messages, and action buttons
 - **Title Bar**: Custom minimize and exit buttons (click and drag to move window)
+- **Size Display**: Each cleanup option shows calculated size in parentheses (e.g., "Windows Temp (125.4 MB)")
+- **Live Updates**: Sizes refresh automatically every 5 seconds and immediately after cleanup operations
+- **Select All Synchronization**: The "Select All" checkbox automatically updates based on individual selections
 
 ## Important Notes
 

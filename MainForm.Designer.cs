@@ -17,6 +17,12 @@ namespace XNullCleanup
             {
                 components.Dispose();
             }
+            if (disposing)
+            {
+                // Dispose of the timer
+                sizeRefreshTimer?.Stop();
+                sizeRefreshTimer?.Dispose();
+            }
             base.Dispose(disposing);
         }
 
