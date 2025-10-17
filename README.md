@@ -69,16 +69,10 @@ A modern, Material 3-themed Windows cleanup utility that helps you free up disk 
 
 ## Installation
 
-1. Download the latest release from the Releases section
-2. Extract the files to any location on your computer
-3. **Important**: Add a valid .ico file named "cleanup.ico" to the Resources directory (see Resources/README.txt for details)
-4. Run `XNullCleanup.exe` (Administrator privileges will be requested automatically via Windows UAC)
-
-### Icon Setup
-The application requires a custom icon file to display properly in the taskbar:
-- Place a .ico file named "cleanup.ico" in the Resources folder
-- The icon should be at least 32x32 pixels in size
-- You can convert PNG/JPG images to ICO format using online converters
+1. Download the latest setup installer from the Releases section
+2. Run the installer and follow the installation wizard
+3. Launch XNull Cleanup Tool from the Start Menu or desktop shortcut
+4. Administrator privileges will be requested automatically via Windows UAC
 
 ## Usage
 
@@ -136,10 +130,17 @@ The application requires a custom icon file to display properly in the taskbar:
 1. Clone this repository
 2. Open `XNullCleanup.sln` in Visual Studio
 3. Restore NuGet packages (automatic in VS 2022)
-4. Set build configuration to Release for distribution
-5. Build the solution (Ctrl+Shift+B)
-6. Add the required cleanup.ico file to the Resources directory
+4. **Important**: Add a valid .ico file named "cleanup.ico" to the Resources directory (see Resources/README.txt for details)
+5. Set build configuration to Release for distribution
+6. Build the solution (Ctrl+Shift+B)
 7. The executable will be in `bin\Release\net6.0-windows\`
+
+### Icon Setup for Developers
+When building from source, the application requires a custom icon file:
+- Place a .ico file named "cleanup.ico" in the Resources folder
+- The icon should be at least 32x32 pixels in size
+- You can convert PNG/JPG images to ICO format using online converters
+- This is only required when building from source - the installer version includes the icon
 
 ### Project Structure
 ```
