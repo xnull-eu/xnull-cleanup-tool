@@ -2,6 +2,10 @@
 
 A modern, Material 3-themed Windows cleanup utility that helps you free up disk space by removing temporary files and other unnecessary data.
 
+<p align="center">
+  <img src="https://xnull.eu/cleanup-tool/xct.png" alt="Banner" width="100%">
+</p>
+
 ## Features
 
 - **Modern Material 3 UI**: Clean, modern interface with a dark theme following Material 3 design guidelines
