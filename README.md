@@ -1,4 +1,4 @@
-# XNull Cleanup Tool
+# XNull DiskSweep
 
 A modern, Material 3-themed Windows cleanup utility that helps you free up disk space by removing temporary files and other unnecessary data.
 
@@ -75,7 +75,7 @@ A modern, Material 3-themed Windows cleanup utility that helps you free up disk 
 
 1. Download the latest setup installer from the Releases section
 2. Run the installer and follow the installation wizard
-3. Launch XNull Cleanup Tool from the Start Menu or desktop shortcut
+3. Launch XNull DiskSweep from the Start Menu or desktop shortcut
 4. Administrator privileges will be requested automatically via Windows UAC
 
 ## Usage
